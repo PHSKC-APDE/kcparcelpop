@@ -47,8 +47,8 @@ rb_sum = rb[, .(res_beds = sum(Bedrooms, na.rm = T)), .(Major, Minor)]
 condo[, nbeds := NbrBedrooms]
 condo[nbeds == 'S', nbeds := 1]
 condo[, nbeds := as.numeric(nbeds)]
-condo_sum = condo[, .(condo_beds = sum(nbeds, na.rm = T)), .(Major, Minor)]
-
+condo_sum = condo[, .(condo_beds = sum(nbeds, na.rm = T)), .(Major)]
+condo_sum[, Minor := 0]
 
 beds = parcel[, .(Major, Minor)]
 for(i in list(apt_sum, rb_sum, condo_sum)){
@@ -81,5 +81,5 @@ beds_per_parcel = ptrt
 
 
 # Save some objects
-usethis::use_data(housing_parcels_shp, beds_per_parcel)
-tools::resaveRdaFiles('/data')
+usethis::use_data(housing_parcels_shp, beds_per_parcel, overwrite = TRUE)
+tools::resaveRdaFiles('data/')
