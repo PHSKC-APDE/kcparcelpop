@@ -7,6 +7,7 @@ library('sf')
 library('stringr')
 library('tigris')
 library('usethis')
+library('kcgeocode')
 options(tigris_use_cache = TRUE)
 
 #KCIT parcel shapefile
@@ -38,48 +39,80 @@ apts[, nbeds := NbrBedrooms]
 apts[nbeds == 'S', nbeds := 1]
 apts[, nbeds := as.numeric(nbeds)]
 apts[, nbeds := nbeds * as.numeric(NbrThisType)]
-apt_sum = apts[, .(apt_beds = sum(nbeds, na.rm = T)), .(Major, Minor)]
-
+apt_sum = apts[, .(beds = sum(nbeds, na.rm = T), address = first(Address)), .(Major, Minor)]
+apt_sum[, type := 'apt']
 # Residential
-rb_sum = rb[, .(res_beds = sum(Bedrooms, na.rm = T)), .(Major, Minor)]
+rb_sum = rb[, .(beds = sum(Bedrooms, na.rm = T), address = first(Address)), .(Major, Minor)]
+rb_sum[, type := 'res']
 
 #condo
 condo[, nbeds := NbrBedrooms]
 condo[nbeds == 'S', nbeds := 1]
 condo[, nbeds := as.numeric(nbeds)]
-condo_sum = condo[, .(condo_beds = sum(nbeds, na.rm = T)), .(Major)]
+ads = c("BuildingNumber", "Fraction", "DirectionPrefix", "StreetName", 
+        "StreetType", "DirectionSuffix","ZipCode")
+condo[, (ads) := lapply(.SD, trimws), .SDcols = ads]
+condo[, address := do.call(paste, .SD), .SDcols = ads]
+condo[, address := gsub('\\s+', ' ', address)]
+condo_sum = condo[, .(beds = sum(nbeds, na.rm = T), address = first(address)), .(Major)]
 condo_sum[, Minor := 0]
+condo_sum[, type := 'condo']
 
-beds = parcel[, .(Major, Minor)]
-for(i in list(apt_sum, rb_sum, condo_sum)){
-  beds = merge(beds, i, all.x = T, by = c('Major', 'Minor'))
-}
+# create beds dataset
+beds = rbind(apt_sum, condo_sum, rb_sum)
+beds[, address := trimws(gsub('\\s+', ' ', address))]
+beds[, address := first(address), .(Major, Minor)]
+beds = dcast(beds, Major + Minor + address ~ type, value.var = 'beds')
+setnames(beds, c('apt', 'condo', 'res'), c('apt_beds', 'condo_beds', 'res_beds'))
 beds[, tot_beds := rowSums(.SD,na.rm = T), .SDcols = c('apt_beds', 'res_beds', 'condo_beds')]
+beds[, c('apt_beds', 'res_beds', 'condo_beds') := lapply(.SD, function(x){
+  x[is.na(x)] = 0
+  x
+}), .SDcols = c('apt_beds', 'res_beds', 'condo_beds')]
 beds = beds[tot_beds>0]
 
 # create PIN
 beds[, PIN := paste0(str_pad(Major, width = 6,side = 'left', pad = 0),str_pad(Minor, width = 4,side = 'left', pad = 0))]
 
 # limit pshp into parcels with beds
+pshp_ads = unique(data.table(pshp)[, .(PIN, COMP_ADDR)])
 pshp = subset(pshp, pshp$PIN %in% beds[, PIN])
 
 # assign tracts to parcels (blocks with privacy disclosure are probably too wonky)
-tracts = tigris::tracts(state = 'WA', county = '033', cb = TRUE, year = 2020)
+tracts = tigris::tracts(state = 'WA', county = '033', cb = FALSE, year = 2020)
 tracts = tracts[, c('GEOID', 'ALAND', 'AWATER')]
 tracts = st_transform(tracts, st_crs(pshp))
-ptrt = st_join(pshp, tracts, largest = TRUE)
 
-#Make sure its unique by parcel
-st_geometry(ptrt) = NULL
-setDT(ptrt)
-stopifnot(ptrt[, .N, PIN][, all(N == 1)])
+pshp = pshp[, c('PIN')]
 
-ptrt = merge(ptrt, beds, by = 'PIN')
+# Assign parcels by centriod overlap with tracts
+# to save computation time
+pcoords = st_centroid(pshp)
+ptrt = st_join(pcoords, tracts)
 
-housing_parcels_shp = pshp
-beds_per_parcel = ptrt
+beds_per_parcel = merge(beds, ptrt[, c('PIN', 'GEOID')], all.x = T, by = 'PIN')
+beds_per_parcel[, geometry:=NULL]
+
+# Fix parcel addresses-- in a lazy way
+for(id in unique(beds_per_parcel[address=='' | is.na(address), PIN])){
+  
+  newad = pshp_ads[PIN %in% id, COMP_ADDR]
+  if(length(newad)>0){
+    beds_per_parcel[PIN == id, address := newad]
+  }
+  
+ 
+}
+
+
+# geocode the addresses that didn't work
+# this doesn't seem to get enough to make it worthwhile-- probably if the addresses were cleaned
+# 
+# geome = unique(beds_per_parcel[is.na(GEOID), address])
+# xy = lapply(geome, kcgeocode:::kc_singleline)
+# xy = rbindlist(xy, use.names = TRUE)
 
 
 # Save some objects
-usethis::use_data(housing_parcels_shp, beds_per_parcel, overwrite = TRUE)
+usethis::use_data(pcoords, beds_per_parcel, overwrite = TRUE)
 tools::resaveRdaFiles('data/')
