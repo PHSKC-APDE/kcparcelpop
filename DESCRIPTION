@@ -11,3 +11,9 @@ RoxygenNote: 7.2.1
 LazyData: true
 Depends: 
     R (>= 2.10)
+Suggests: 
+    data.table,
+    sf,
+    stringr,
+    tigris,
+    usethis

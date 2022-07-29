@@ -7,7 +7,6 @@ library('sf')
 library('stringr')
 library('tigris')
 library('usethis')
-library('kcgeocode')
 options(tigris_use_cache = TRUE)
 
 #KCIT parcel shapefile

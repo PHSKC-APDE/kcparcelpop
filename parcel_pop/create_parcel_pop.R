@@ -1,7 +1,7 @@
 library(data.table)
-library('mapview')
-library('ggplot2')
-library('rstanarm')
+# library('mapview')
+# library('ggplot2')
+# library('rstanarm')
 options(tigris_use_cache = TRUE)
 tracts = tigris::tracts(state = 'WA', county = '033', cb = TRUE, year = 2020)
 tracts = tracts[, c('GEOID', 'ALAND', 'AWATER')]
