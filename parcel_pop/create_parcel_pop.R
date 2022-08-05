@@ -83,7 +83,7 @@ beds_per_parcel = beds_per_parcel[!is.na(GEOID)]
 beds_per_parcel[, parcel_pop := selected * pop/parcel_tpop]
 
 # clean up
-beds_per_parcel = beds_per_parcel[, .(GEOID, PIN, address, apt_beds, condo_beds, tot_beds, parcel_pop)]
+beds_per_parcel = beds_per_parcel[, .(GEOID, PIN, address, apt_beds, condo_beds, tot_beds, pop = parcel_pop)]
 
 # add centriods
 load('data/pcoords.rda')

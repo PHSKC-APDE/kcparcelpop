@@ -51,7 +51,7 @@ ads = c("BuildingNumber", "Fraction", "DirectionPrefix", "StreetName",
 comm[, address := do.call(paste, .SD), .SDcols = ads]
 comm[, address := gsub('\\s+', ' ', address)]
 greek = parcel[PresentUse == 342, .(Major, Minor)]
-greek = merge(greek, comm[, .(address, BldgNetSqFt, Major, Minor)], all.x = T, by = c('Major', 'Minor'))
+greek = merge(greek, comm[, .(address = first(address), BldgNetSqFt = sum(as.numeric(BldgNetSqFt))), .(Major, Minor)], all.x = T, by = c('Major', 'Minor'))
 
 # 8/5/22: UW says ~3500 people live at greek buildings.
 # treat them as apartmetns with the pop distributed by bldg sq  ft
@@ -81,6 +81,7 @@ beds = rbind(apt_sum, condo_sum, rb_sum)
 beds[, address := trimws(gsub('\\s+', ' ', address))]
 beds[, address := first(address), .(Major, Minor)]
 beds = dcast(beds, Major + Minor + address ~ type, value.var = 'beds')
+
 setnames(beds, c('apt', 'condo', 'res'), c('apt_beds', 'condo_beds', 'res_beds'))
 beds[, tot_beds := rowSums(.SD,na.rm = T), .SDcols = c('apt_beds', 'res_beds', 'condo_beds')]
 beds[, c('apt_beds', 'res_beds', 'condo_beds') := lapply(.SD, function(x){
@@ -138,6 +139,11 @@ for(id in unique(beds_per_parcel[address=='' | is.na(address), PIN])){
  
 }
 
+#uw status-- 0 for no, 1 for frats, 2 for on campus
+beds_per_parcel[, uw := 0]
+greek[, PIN := paste0(str_pad(Major, width = 6,side = 'left', pad = 0),str_pad(Minor, width = 4,side = 'left', pad = 0))]
+beds_per_parcel[PIN %in% greek[, PIN], uw := 1]
+beds_per_parcel[PIN %in% uwbeds[, PIN], uw := 2]
 
 # geocode the addresses that didn't work
 # this doesn't seem to get enough to make it worthwhile-- probably if the addresses were cleaned

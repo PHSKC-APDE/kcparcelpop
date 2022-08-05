@@ -53,8 +53,7 @@ hall[, name := trimws(substr(V1, 1, lastspace))]
 
 # apartment housing
 apt = c("Blakeley-Village-FH", "Commodore-Duchess", 
-  "Commodore-Duchess-FH", "Laurel-Village-FH", "Radford-Court", "Radford-Court-FH", 
-  "Stevens-Court", "Stevens-Court-FH")
+  "Commodore-Duchess-FH", "Laurel-Village-FH", "Radford-Court", "Radford-Court-FH", "Stevens-Court-FH")
 
 apt = unique(r[name %in% apt, .(`ROOM TYPE`, name, `#UNITS`)])
 apt[, name := gsub('-FH', '', name)]
@@ -71,6 +70,8 @@ apt = apt[, .(nbeds = sum(`#UNITS` * nbeds)), .(name)]
 res = rbind(hall[, .(name, nbeds)], apt)
 res[name == 'Mercer Court A–C', name := 'Mercer Court A, B, C']
 res[name == 'Mercer Court D–E', name := 'Mercer Court D, E']
+res = res[, .(nbeds = sum(nbeds)), name]
+
 # standardize the names and geoms of the uw buildings
 bnames = fread('C:/Users/dcasey/local_downloads/parcel_data/uwhouse.csv')
 uwb = st_read("C:/Users/dcasey/local_downloads/parcel_data/uwHousingBuildings/HousingBuildings.shp")
@@ -90,4 +91,4 @@ uwb = rbind(uwb, addme)
 # Add in bed counts
 uwb = merge(uwb, res, all.y = T, by = 'name')
 
-usethis::use_data(uwb)
+usethis::use_data(uwb,overwrite = TRUE)
