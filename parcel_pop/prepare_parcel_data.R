@@ -32,6 +32,9 @@ rb = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_ResBldg.csv")
 # unit breakdown: per each real property, provides the number of of bedrooms and sqft
 ub = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_UnitBreakdown.csv")
 
+# commercial
+comm = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_CommBldg.csv")
+
 # apartment units
 apts = merge(ac, ub, all.x = T, by = c('Major', 'Minor'))
 apts[, nbeds := NbrBedrooms]
@@ -40,6 +43,23 @@ apts[, nbeds := as.numeric(nbeds)]
 apts[, nbeds := nbeds * as.numeric(NbrThisType)]
 apt_sum = apts[, .(beds = sum(nbeds, na.rm = T), address = first(Address)), .(Major, Minor)]
 apt_sum[, type := 'apt']
+
+# deal with frat/srat houses from UW
+# commercial address
+ads = c("BuildingNumber", "Fraction", "DirectionPrefix", "StreetName", 
+        "StreetType", "DirectionSuffix","ZipCode")
+comm[, address := do.call(paste, .SD), .SDcols = ads]
+comm[, address := gsub('\\s+', ' ', address)]
+greek = parcel[PresentUse == 342, .(Major, Minor)]
+greek = merge(greek, comm[, .(address, BldgNetSqFt, Major, Minor)], all.x = T, by = c('Major', 'Minor'))
+
+# 8/5/22: UW says ~3500 people live at greek buildings.
+# treat them as apartmetns with the pop distributed by bldg sq  ft
+# https://www.washington.edu/ofsl/join/greek-housing/
+greek[, beds := 3500 * as.numeric(BldgNetSqFt)/sum(as.numeric(BldgNetSqFt))]
+
+apt_sum = rbind(apt_sum, greek[, .(Major, Minor, beds, address, type = 'apt')])
+
 # Residential
 rb_sum = rb[, .(beds = sum(Bedrooms, na.rm = T), address = first(Address)), .(Major, Minor)]
 rb_sum[, type := 'res']
@@ -48,8 +68,7 @@ rb_sum[, type := 'res']
 condo[, nbeds := NbrBedrooms]
 condo[nbeds == 'S', nbeds := 1]
 condo[, nbeds := as.numeric(nbeds)]
-ads = c("BuildingNumber", "Fraction", "DirectionPrefix", "StreetName", 
-        "StreetType", "DirectionSuffix","ZipCode")
+
 condo[, (ads) := lapply(.SD, trimws), .SDcols = ads]
 condo[, address := do.call(paste, .SD), .SDcols = ads]
 condo[, address := gsub('\\s+', ' ', address)]
@@ -84,10 +103,26 @@ tracts = st_transform(tracts, st_crs(pshp))
 
 pshp = pshp[, c('PIN')]
 
-# Assign parcels by centriod overlap with tracts
-# to save computation time
+# convert to centriods for computation speed
 pcoords = st_centroid(pshp)
+
+
+# Add uw dorms, beds and pcoords
+load('data/uwb.rda')
+uwb$PIN = uwb$name
+uwb = st_transform(uwb, crs = st_crs(pcoords))
+
+pcoords = rbind(pcoords, uwb[, 'PIN'])
+
+uwbeds = data.table(uwb)
+
+beds[, c('Major','Minor') := NULL]
+beds = rbind(beds, uwbeds[, .(PIN = name, address = 'UW Campus Housing', 
+                              apt_beds = nbeds, condo_beds = 0,
+                              res_beds = 0, tot_beds = nbeds)])
+
 ptrt = st_join(pcoords, tracts)
+
 
 beds_per_parcel = merge(beds, ptrt[, c('PIN', 'GEOID')], all.x = T, by = 'PIN')
 beds_per_parcel[, geometry:=NULL]
@@ -110,7 +145,6 @@ for(id in unique(beds_per_parcel[address=='' | is.na(address), PIN])){
 # geome = unique(beds_per_parcel[is.na(GEOID), address])
 # xy = lapply(geome, kcgeocode:::kc_singleline)
 # xy = rbindlist(xy, use.names = TRUE)
-
 
 # Save some objects
 usethis::use_data(pcoords, beds_per_parcel, overwrite = TRUE)
