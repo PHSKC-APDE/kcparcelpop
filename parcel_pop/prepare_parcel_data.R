@@ -160,5 +160,5 @@ beds_per_parcel[PIN %in% uwbeds[, PIN], uw := 2]
 # xy = rbindlist(xy, use.names = TRUE)
 
 # Save some objects
-usethis::use_data(pcoords, beds_per_parcel, overwrite = TRUE)
-tools::resaveRdaFiles('data/')
+usethis::use_data(pcoords, beds_per_parcel, overwrite = TRUE, version = 3)
+tools::resaveRdaFiles('data/', version = 3)
