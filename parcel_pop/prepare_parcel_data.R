@@ -35,6 +35,9 @@ ub = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_UnitBreakdown.csv")
 # commercial
 comm = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_CommBldg.csv")
 
+# greek
+greek_fp = "C:/Users/dcasey/local_downloads/parcel_data/uw_greek.csv"
+
 # apartment units
 apts = merge(ac, ub, all.x = T, by = c('Major', 'Minor'))
 apts[, nbeds := NbrBedrooms]
@@ -50,15 +53,19 @@ ads = c("BuildingNumber", "Fraction", "DirectionPrefix", "StreetName",
         "StreetType", "DirectionSuffix","ZipCode")
 comm[, address := do.call(paste, .SD), .SDcols = ads]
 comm[, address := gsub('\\s+', ' ', address)]
-greek = parcel[PresentUse == 342, .(Major, Minor)]
-greek = merge(greek, comm[, .(address = first(address), BldgNetSqFt = sum(as.numeric(BldgNetSqFt))), .(Major, Minor)], all.x = T, by = c('Major', 'Minor'))
 
-# 8/5/22: UW says ~3500 people live at greek buildings.
-# treat them as apartmetns with the pop distributed by bldg sq  ft
-# https://www.washington.edu/ofsl/join/greek-housing/
-greek[, beds := 3500 * as.numeric(BldgNetSqFt)/sum(as.numeric(BldgNetSqFt))]
-
-apt_sum = rbind(apt_sum, greek[, .(Major, Minor, beds, address, type = 'apt')])
+# 8/5/22
+# Some of the parcel data seems to have the wrong address (relative to google and websites)
+# also, not sure what to do with ones that don't have any greek people
+# assume no residents for things zoned/classified as greek housing without data
+# David Hotz at UW sent over some estimates of people in the building
+# I manually cross referenced it with the results from:
+# greek = parcel[PresentUse == 342, .(Major, Minor, Name = PropName)]
+# greek = merge(greek,  comm[, .(address = first(address)), .(Major, Minor)], all.x = T, by = c('Major', 'Minor'))
+# greek[, PIN := paste0(str_pad(Major, width = 6,side = 'left', pad = 0),str_pad(Minor, width = 4,side = 'left', pad = 0))]
+greek  = fread(greek_fp) 
+# Combine greeks to apartment using occupancy since that is what we actually want
+apt_sum = rbind(apt_sum, greek[!is.na(nocc2022), .(Major, Minor, beds = nocc2022, address, type = 'apt')])
 
 # Residential
 rb_sum = rb[, .(beds = sum(Bedrooms, na.rm = T), address = first(Address)), .(Major, Minor)]
@@ -71,14 +78,14 @@ condo[, nbeds := as.numeric(nbeds)]
 
 condo[, (ads) := lapply(.SD, trimws), .SDcols = ads]
 condo[, address := do.call(paste, .SD), .SDcols = ads]
-condo[, address := gsub('\\s+', ' ', address)]
+condo[, address := gsub('//s+', ' ', address)]
 condo_sum = condo[, .(beds = sum(nbeds, na.rm = T), address = first(address)), .(Major)]
 condo_sum[, Minor := 0]
 condo_sum[, type := 'condo']
 
 # create beds dataset
 beds = rbind(apt_sum, condo_sum, rb_sum)
-beds[, address := trimws(gsub('\\s+', ' ', address))]
+beds[, address := trimws(gsub('//s+', ' ', address))]
 beds[, address := first(address), .(Major, Minor)]
 beds = dcast(beds, Major + Minor + address ~ type, value.var = 'beds')
 
