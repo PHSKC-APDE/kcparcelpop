@@ -1,4 +1,6 @@
 library(data.table)
+library('DBI')
+library('rads')
 # library('mapview')
 # library('ggplot2')
 # library('rstanarm')
@@ -9,16 +11,24 @@ tracts = tracts[, c('GEOID', 'ALAND', 'AWATER')]
 # beds_per_parcel
 load('data/beds_per_parcel.rda')
 
-# Population
-version = 'v3'
-popdir = file.path('//dphcifs/APDE-CDIP/Frankenpop', version ,'todoh')
-pop = fread(file.path(popdir, "blk_2022.csv.gz"))
-pop = pop[substr(CensusBlockCode2020,1,5) == 53033]
-pop[, tract := substr(CensusBlockCode2020,1,11)]
+mykey = 'azure'
+con <- pool::dbPool(odbc::odbc(),
+                    driver = getOption('rads.odbc_version'),
+                    server = keyring::key_list(service = 'azure_server')$username[1],
+                    database = keyring::key_get('azure_server', keyring::key_list(service = 'azure_server')$username[1]),
+                    uid = keyring::key_list(mykey)[["username"]],
+                    pwd = keyring::key_get(mykey, keyring::key_list(mykey)[["username"]]),
+                    Encrypt = 'yes',
+                    TrustServerCertificate = 'yes',
+                    Authentication = 'ActiveDirectoryPassword')
+
+pop = setDT(dbGetQuery(con, "select * from ref.fpop where 
+                       geo_type = 'blk' AND year = 2022 and fips_co = 33"))
+pop[, tract := substr(geo_id,1,11)]
 
 # Aggregate to the tract level
 # TODO: What to do about UW?
-tpop = pop[, .(pop = sum(Population)), tract]
+tpop = pop[, .(pop = sum(pop)), tract]
 tbeds = beds_per_parcel[, lapply(.SD, sum, na.rm = T), by = .(tract = GEOID), .SDcols = c('apt_beds', 'res_beds', 'condo_beds', 'tot_beds')]
 
 # merge
@@ -69,7 +79,7 @@ beds_per_parcel[, pred1.3 := make_preds(m1.3, beds_per_parcel)] # this one seems
 beds_per_parcel[, pred1.4 := make_preds(m1.4, beds_per_parcel)]
 
 # The two glm models seem wonky. I guess in log scale the intercept is more important for determining position on the log scale
-smol = which.min(abs(pop[, sum(Population)] - unlist(beds_per_parcel[, lapply(.SD, sum), .SDcols = patterns('pred1')])))
+smol = which.min(abs(pop[, sum(pop)] - unlist(beds_per_parcel[, lapply(.SD, sum), .SDcols = patterns('pred1')])))
 
 # Take the closest to the true population
 beds_per_parcel[, selected := get(names(smol))]
