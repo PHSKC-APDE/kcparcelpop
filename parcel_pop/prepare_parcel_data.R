@@ -12,6 +12,9 @@ options(tigris_use_cache = TRUE)
 #KCIT parcel shapefile
 pshp = st_read("//kcitfsrprpgdw01/KCLIB/Plibrary2/property/shapes/polygon/parcel_address_4co.shp")
 pshp = subset(pshp, COUNTY == 'KING')
+
+pshp = st_transform(pshp, st_crs(2926))
+
 # File descriptions:
 # lookup
 lookup = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_LookUp.csv")
