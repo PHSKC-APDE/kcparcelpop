@@ -11,19 +11,8 @@ tracts = tracts[, c('GEOID', 'ALAND', 'AWATER')]
 # beds_per_parcel
 load('data/beds_per_parcel.rda')
 
-mykey = 'azure'
-con <- pool::dbPool(odbc::odbc(),
-                    driver = getOption('rads.odbc_version'),
-                    server = keyring::key_list(service = 'azure_server')$username[1],
-                    database = keyring::key_get('azure_server', keyring::key_list(service = 'azure_server')$username[1]),
-                    uid = keyring::key_list(mykey)[["username"]],
-                    pwd = keyring::key_get(mykey, keyring::key_list(mykey)[["username"]]),
-                    Encrypt = 'yes',
-                    TrustServerCertificate = 'yes',
-                    Authentication = 'ActiveDirectoryPassword')
+pop = rads::get_population(years = 2022, geo_type = 'blk')
 
-pop = setDT(dbGetQuery(con, "select * from ref.fpop where 
-                       geo_type = 'blk' AND year = 2022 and fips_co = 33"))
 pop[, tract := substr(geo_id,1,11)]
 
 # Aggregate to the tract level
