@@ -11,7 +11,7 @@ tracts = tracts[, c('GEOID', 'ALAND', 'AWATER')]
 # beds_per_parcel
 load('data/beds_per_parcel.rda')
 
-pop = rads::get_population(years = 2022, geo_type = 'blk')
+pop = rads::get_population(years = 2022, geo_type = 'tract', geo_vintage = 2020, census_vintage = 2020)
 
 pop[, tract := substr(geo_id,1,11)]
 
@@ -84,7 +84,7 @@ beds_per_parcel = beds_per_parcel[!is.na(GEOID)]
 beds_per_parcel[, parcel_pop := selected * pop/parcel_tpop]
 
 # clean up
-beds_per_parcel = beds_per_parcel[, .(GEOID, PIN, address, apt_beds, condo_beds, tot_beds, pop = parcel_pop)]
+beds_per_parcel = beds_per_parcel[, .(GEOID, PIN, address, apt_beds, condo_beds, tot_beds,res_beds, pop = parcel_pop)]
 
 # add centriods
 load('data/pcoords.rda')
