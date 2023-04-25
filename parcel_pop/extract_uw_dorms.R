@@ -91,4 +91,4 @@ uwb = rbind(uwb, addme)
 # Add in bed counts
 uwb = merge(uwb, res, all.y = T, by = 'name')
 
-usethis::use_data(uwb,overwrite = TRUE, version = 3)
+usethis::use_data(uwb,overwrite = TRUE)
