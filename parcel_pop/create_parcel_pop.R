@@ -91,7 +91,7 @@ load('data/pcoords.rda')
 
 parcel_pop = merge(pcoords, beds_per_parcel, all.x = T, by = 'PIN')
 
-usethis::use_data(parcel_pop, overwrite = TRUE)
+usethis::use_data(parcel_pop, overwrite = TRUE, version = 3)
 
 # 
 # scls = lapply(tdat[, .SD, .SDcols = c('apt_beds', 'res_beds', 'condo_beds')], scale)
