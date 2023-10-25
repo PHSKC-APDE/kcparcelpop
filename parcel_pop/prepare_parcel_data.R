@@ -9,36 +9,51 @@ library('tigris')
 library('usethis')
 options(tigris_use_cache = TRUE)
 
-#KCIT parcel shapefile
-pshp = st_read("//kcitfsrprpgdw01/KCLIB/Plibrary2/property/shapes/polygon/parcel_address_4co.shp")
+# Load the parcel data from Open data and subsetit to king county ----
+## NOTE: This step takes a while -- its probably a good idea to save the file once it loads
+## and read from the cached copy. Or just download it directly from https://gis-kingcounty.opendata.arcgis.com/datasets/kingcounty::parcel-address-4-county-area-parcel-address-4co-area/about
+pshp = st_read("https://gisdata.kingcounty.gov/arcgis/rest/services/OpenDataPortal/property__parcel_address_4co_area/MapServer/2876/query?where=COUNTY%20%3D%20'KING'&outFields=PIN,STREET,UNIT,CITY,ZIP,COUNTY,COMP_ADDR&outSR=2926&f=json")
+# pshp = st_read("//kcitfsrprpgdw01/KCLIB/Plibrary2/property/shapes/polygon/parcel_address_4co.shp")
 pshp = subset(pshp, COUNTY == 'KING')
 
 pshp = st_transform(pshp, st_crs(2926))
 
-# File descriptions:
-# lookup
+# File descriptions ----
+# Most files are from: https://info.kingcounty.gov/assessor/datadownload/default.aspx
+## lookup ----
+## https://aqua.kingcounty.gov/extranet/assessor/Lookup.zip
 lookup = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_LookUp.csv")
 
-# Accessory is where the actual assessed values are kept
-# Apartment complex: provides details on apartment buildings in a complex, but not unit level details
+## Apartment complex ----
+## provides details on apartment buildings in a complex, but not unit level details
+## https://aqua.kingcounty.gov/extranet/assessor/Apartment%20Complex.zip
 ac = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_AptComplex.csv")
 
-# condo complex and units: building level details about condo buildings
+## Condo ----
+## condo complex and units: building level details about condo buildings
+## https://aqua.kingcounty.gov/extranet/assessor/Condo%20Complex%20and%20Units.zip
 condo = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_CondoUnit2.csv")
 
-# parcel level data
+## parcel level data ----
+## https://aqua.kingcounty.gov/extranet/assessor/Parcel.zip
 parcel = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_Parcel.csv")
 
-# residential bulding: one record per building. Residential units have between 1 - 3 living units
+## residential --
+## residential bulding: one record per building. Residential units have between 1 - 3 living units
+## https://aqua.kingcounty.gov/extranet/assessor/Residential%20Building.zip
 rb = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_ResBldg.csv")
 
-# unit breakdown: per each real property, provides the number of of bedrooms and sqft
+## unit ----
+## unit breakdown: per each real property, provides the number of of bedrooms and sqft
+## https://aqua.kingcounty.gov/extranet/assessor/Unit%20Breakdown.zip
 ub = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_UnitBreakdown.csv")
 
-# commercial
+## commercial ----
+## https://aqua.kingcounty.gov/extranet/assessor/Commercial%20Building.zip
 comm = fread("C:/Users/dcasey/local_downloads/parcel_data/EXTR_CommBldg.csv")
 
-# greek
+## greek ----
+## See other script about how this file was created
 greek_fp = "C:/Users/dcasey/local_downloads/parcel_data/uw_greek.csv"
 
 # apartment units
