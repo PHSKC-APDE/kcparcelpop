@@ -17,10 +17,10 @@ for(db in dbs){
   if(hasparcels){
     dir.create(file.path(ofol, y))
     # Copy parcel shape
-    # gdalUtilities::ogr2ogr(src_datasource_name = db,
-    #                        dst_datasource_name = file.path(ofol, y, 'parcel_area.gpkg'),
-    #                        layer = 'parcel_area',
-    #                        overwrite = T)
+    gdalUtilities::ogr2ogr(src_datasource_name = db,
+                           dst_datasource_name = file.path(ofol, y, 'parcel_area.shp'),
+                           layer = 'parcel_area',
+                           overwrite = T)
     
     # # Extra files
     extraz = extr$name[grep('extr', tolower(extr$name))]
