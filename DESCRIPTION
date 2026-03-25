@@ -13,15 +13,14 @@ Depends:
     R (>= 3.5.0),
     DBI,
     sf,
-    apde.data,
     glue
 Remotes:
     github::PHSKC-APDE/apde.data
 Suggests: 
     duckdb,
-    sf,
     arrow,
     data.table,
     dplyr,
     future.apply,
-    tinytest
+    tinytest,
+    apde.data
