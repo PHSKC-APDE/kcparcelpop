@@ -1,8 +1,8 @@
 # kcparcelpop
 
-kcparcelpop is a data package. The primary dataset, accessed via `kcparcelpop::parcel_pop` , is sf-data.frame of points within King County and each point (parcel centriod) is assigned an estimate number of people living at that point. Parcel level population estimates derive from the number of beds in each parcel by type (small residential vs. apartment vs. condo) and calibrated to 2020 Census estimates at the tract level.
+kcparcelpop, via the `kcparcelpop::point_pop` function, allows users to access sub-block population estimates for King County (partially derived from parcels). `point_pop` returns an sf-data.frame of points within King County and each point is assigned an estimated number of people living at that point.
 
-These population estimates should be considered "approximately correct" insofar as the spatial pattern is probably decent, but the actual estimate of people at a given parcel may be wonky. Beyond estimation error, folks living in group quarters or those with transient sleeping locations may not be fully counted/properly geocoded.
+These population estimates should be considered "approximately correct" insofar as the spatial pattern is probably decent, but the actual estimate of people at a given location may be wonky.
 
 ## Installation
 
