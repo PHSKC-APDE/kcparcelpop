@@ -5,7 +5,7 @@
 #' @param con a DBI data base connection
 #' @importFrom DBI dbGetQuery SQL
 #' @importFrom glue glue_sql glue
-#' @importFrom sf st_transform st_union st_as_text st_sf st_as_sfc st_buffer
+#' @importFrom sf st_transform st_union st_as_text st_sf st_as_sfc st_buffer st_intersects
 #' @returns An sf data.frame of points and a column describing the number of people approximately at that point
 #' @export
 point_pop = function(year, geog_window, table = DBI::Id(schema = 'ref', table = 'kc_point_pop'), con = apde.data::authenticate_hhsaw()){
