@@ -6,7 +6,7 @@ editor: visual
 
 ## A 'real' data example
 
-Our real data examples will be examining the percent of deaths between 2022 and 2025 that were due to diabetes and the count of deaths due to all drugs during that period. The source geography will be tracts and the target geography will be HRAs. Records that are not geocoded within King County are omitted from the analysis.
+Our real data examples will be examining the percent of deaths between 2022 and 2024 that were due to diabetes and the count of deaths due to all drugs during that period. The source geography will be tracts and the target geography will be HRAs. Records that are not geocoded within King County are omitted from the analysis.
 
 ```{r, include=FALSE}
 library('DBI')
@@ -31,7 +31,7 @@ deaths <- setDT(
     all_drugs, res_lat as lat, res_long as long
     from death.final_analytic as fa
 
-    where chi_year >=2022 AND chi_year<=2025 and
+    where chi_year >=2022 AND chi_year<=2024 and
     res_lat is not null and res_long is not null
     and res_geo_source IS NOT NULL
     and res_geo_source NOT IN ('0', '5 DIGIT URBAN ZIP CE', 'CITY CENTROID', 
@@ -104,7 +104,7 @@ dhra = st_join(deaths, hra[,'id']) %>%
 
 ```{r}
 
-new_pp = read_sf("//dphcifs/APDE-CDIP/Shapefiles/historical_parcel/new_parcel_pop.gpkg")
+new_pp = kcparcelpop::point_pop(2022:2024)
 old_pp = read_sf("//dphcifs/APDE-CDIP/Shapefiles/historical_parcel/old_parcel_pop.gpkg")
 
 geog = create_xwalk(tract, hra, 'GEOID', 'id', method = 'fractional overlap')
@@ -172,7 +172,7 @@ cppop_old = compare_to_truth(dhra, rppop_old)
 knitr::kable(rbind(cgeog, cppop_old, cppop_new), label = 'RMSE by variable and approach')
 ```
 
-As the table shows, parcel population has lower overall error across all indicators.
+As the table shows, parcel population has lower overall error across most indicators.
 
 ```{r}
 

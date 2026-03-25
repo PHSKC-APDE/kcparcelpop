@@ -4,7 +4,7 @@
 ## A ‘real’ data example
 
 Our real data examples will be examining the percent of deaths between
-2022 and 2025 that were due to diabetes and the count of deaths due to
+2022 and 2024 that were due to diabetes and the count of deaths due to
 all drugs during that period. The source geography will be tracts and
 the target geography will be HRAs. Records that are not geocoded within
 King County are omitted from the analysis.
@@ -46,7 +46,7 @@ dhra = st_join(deaths, hra[,'id']) %>%
 ## Crosswalks
 
 ``` r
-new_pp = read_sf("//dphcifs/APDE-CDIP/Shapefiles/historical_parcel/new_parcel_pop.gpkg")
+new_pp = kcparcelpop::point_pop(2022:2024)
 old_pp = read_sf("//dphcifs/APDE-CDIP/Shapefiles/historical_parcel/old_parcel_pop.gpkg")
 
 geog = create_xwalk(tract, hra, 'GEOID', 'id', method = 'fractional overlap')
@@ -118,10 +118,10 @@ knitr::kable(rbind(cgeog, cppop_old, cppop_new), label = 'RMSE by variable and a
 |:---------|-------:|---------:|------:|----------:|-----------:|
 | geog     | 85.191 |    2.196 | 3.598 |     0.007 |      0.002 |
 | ppop_old | 33.986 |    1.534 | 2.356 |     0.003 |      0.002 |
-| ppop_new | 34.597 |    1.514 | 2.250 |     0.003 |      0.002 |
+| ppop_new | 34.459 |    1.515 | 2.216 |     0.003 |      0.002 |
 
-As the table shows, parcel population has lower overall error across all
-indicators.
+As the table shows, parcel population has lower overall error across
+most indicators.
 
 ``` r
 dhra = merge(

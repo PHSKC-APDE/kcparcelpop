@@ -1,19 +1,27 @@
 Package: kcparcelpop
-Title: Parcel Level Population Estimates For King County
+Title: Parcel-ish Level Population Estimates For King County
 Version: 0.0.2.0
 Authors@R: 
     person("Daniel", "Casey", , "dcasey@kingcounty.gov", role = c("aut", "cre"))
-Description: A data package providing parcel level population estimates for King County.
+Description: A package providing an interface to sub-block parcel-ish level population estimates for King County.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.3
 LazyData: true
 Depends: 
-    R (>= 3.5.0)
-Suggests: 
-    data.table,
+    R (>= 3.5.0),
+    DBI,
     sf,
-    stringr,
-    tigris,
-    usethis
+    apde.data,
+    glue
+Remotes:
+    github::PHSKC-APDE/apde.data
+Suggests: 
+    duckdb,
+    sf,
+    arrow,
+    data.table,
+    dplyr,
+    future.apply,
+    tinytest
