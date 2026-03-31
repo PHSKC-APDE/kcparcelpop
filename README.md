@@ -34,4 +34,4 @@ Intermediate steps are stored in year specific duckdb databases on cifs while th
 
 ### Comparison to the previous version
 
-[A detailed comparison can be found here](misc/compare_methods.md). In short, this new method is easier and faster to compute/update without much loss in utility.
+[A detailed comparison can be found here](misc/compare_methods.md). In short, this new method is easier and faster to compute/update without much loss, if any, loss in comparable accuracy.
