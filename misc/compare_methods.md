@@ -45,6 +45,15 @@ dhra = st_join(deaths, hra[,'id']) %>%
 
 ## Crosswalks
 
+Crosswalks from tract to HRA are computed in three ways:
+
+1.  Using the geographic overlap between tracts and HRAs (`geog`)
+2.  The old parcel population method (`old_pp` and `ppop_old`)
+3.  The new point population method (`new_pp` and `ppop_new`). Because
+    the death data covers 2022 - 2024, we pull the corresponding years
+    of point pop data. Results would probably be pretty similar if just
+    one of the years in that range was selected.
+
 ``` r
 new_pp = kcparcelpop::point_pop(2022:2024)
 old_pp = read_sf("//dphcifs/APDE-CDIP/Shapefiles/historical_parcel/old_parcel_pop.gpkg")
@@ -54,21 +63,24 @@ ppop_new = create_xwalk(tract, hra, 'GEOID', 'id', method = 'point pop', point_p
   filter(isect_amount >0)
 ppop_old = create_xwalk(tract, hra, 'GEOID', 'id', method = 'point pop', point_pop = old_pp) |>
   filter(isect_amount >0)
+```
 
+The crosswalks are used to convert tract level mortality estimates,
+specifically the count of deaths due to all causes, drugs, and diabetes
+as well as the fraction of deaths due to diabetes. Diabetes is included
+twice (as a count and as a fraction of `diabetes/all`) to demonstrate
+slight differences in the way counts and proportions are crosswalked.
 
+``` r
 # go from tract to hra
 t2hra = function(dtract, xw,  type = 'geog'){
   
   r = lapply(c('diabetes', 'drugs', 'all', 'pdiabetes'), function(x){
-    
     d = crosswalk(dtract, 'GEOID', est = x, 
               proportion = x == 'pdiabetes', 
               xwalk_df = xw)
-    
     d$var = x
-    
     d
-    
   })
   
   r = rbindlist(r)
@@ -81,7 +93,14 @@ t2hra = function(dtract, xw,  type = 'geog'){
 rgeog = t2hra(dtract, geog, 'geog')
 rppop_new = t2hra(dtract, ppop_new, 'ppop_new')
 rppop_old = t2hra(dtract, ppop_old, 'ppop_old')
+```
 
+The resulting tables (`rgeog`, `rppop_new`, and `rppop_old`) contain the
+HRA level estimates of the selected indicators. The next code block
+compares those estimates to the “truth” and computes the root mean
+squared error (RMSE).
+
+``` r
 rmse = function(obs, pred) round(sqrt(mean((obs - pred)^2)),3)
 # compute rmse for stuff
 compare_to_truth = function(obs, pred){
@@ -120,8 +139,13 @@ knitr::kable(rbind(cgeog, cppop_old, cppop_new), label = 'RMSE by variable and a
 | ppop_old | 33.986 |    1.534 | 2.356 |     0.003 |      0.002 |
 | ppop_new | 34.459 |    1.515 | 2.216 |     0.003 |      0.002 |
 
-As the table shows, parcel population has lower overall error across
-most indicators.
+The table shows the root mean squared error of HRA-level mortality
+estimates (columns) by type of approach to crosswalk between tracts and
+HRAs. Lower numbers are better and the units are the same as the base
+metrics. The two main takeaways are the point/parcel population approach
+is more accurate than the geographic approach and that both point
+population methods have substantively similar accuracy (or inversely,
+error) levels.
 
 ``` r
 dhra = merge(
@@ -160,9 +184,10 @@ ggplot(ghra, aes(fill = dif)) +
         panel.grid = element_blank())
 ```
 
-![](compare_methods_files/figure-commonmark/unnamed-chunk-5-1.png)
+![](compare_methods_files/figure-commonmark/unnamed-chunk-7-1.png)
 
-This graph shows the difference in the observed number of deaths
-relative to the “predicted” number of deaths created via the
+These maps shows the difference in the observed number of all cause
+deaths relative to the “predicted” number of deaths created via the
 crosswalking approaches. In general, the parcel/point population
-approach has less “error” than the geographic approach.
+approach has less “error” than the geographic approach, especially in
+areas with lower population density.
