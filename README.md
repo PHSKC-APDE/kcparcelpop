@@ -17,6 +17,21 @@ remotes::install_github("PHSKC-APDE/kcparcelpop")
 
 kcparcelpop is primarily designed to be used in conjunction with the [spatagg package](https://github.com/PHSKC-APDE/spatagg) to facilitate the crosswalking of estimates between non-nesting geographies.
 
+```{r}
+# Pull 2022 points
+kcparcelpop::point_pop(2022)
+
+# 2022 and 2023
+kcparcelpop::point_pop(2022:2023)
+
+# using a geographic window
+## Requires the tigris package to download the test shape
+## This will return points from Mercer Island for 2024
+plc = subset(tigris::places(53), NAME == 'Mercer Island')
+kcparcelpop::point_pop(2024, plc)
+
+```
+
 ### Methods
 
 The point populations are created over several steps (described below). [ddb_block_parcel_pop.R](parcel_pop/ddb_block_parcel_pop.R) is the script that combines parcel data, Census block geographies, and OFM SADE population estimates into a set of sample points (with a population estimate). This process is conducted by year.
