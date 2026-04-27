@@ -156,7 +156,7 @@ for(year in years){
   
   special_sample = function(pcl){
     ch = st_concave_hull(pcl, ratio = .8)
-    init_points = st_sample(ch, sum(pcl$npts) * 3)
+    init_points = st_sample(ch, sum(pcl$npts) * 3, type = 'random')
     init_points = st_sf(pid = seq_along(init_points), geom = init_points, sf_column_name = 'geom')
     
     # Assign to parcels
@@ -169,20 +169,23 @@ for(year in years){
     
     # sample the rest
     gids = pcl |> filter(GEOID20 %in% unique(c(notdone$GEOID20, setdiff(pcl$GEOID20, done$GEOID20)))) 
-    remain = gids |> st_sample(gids$npts)
+    gids = merge(gids, notdone[, c('GEOID20', 'nsamp')], all.x = T, by = 'GEOID20')
+    gids$nsamp[is.na(gids$nsamp)] <- 0
+    gids = gids |> mutate(togo = npts - nsamp)
+    remain = gids |> st_sample(gids$togo, type = 'random')
     remain = st_sf(
-      GEOID20 = rep(gids$GEOID20, gids$npts),
+      GEOID20 = rep(gids$GEOID20, gids$togo),
       geom = remain, 
       sf_column_name = 'geom'
     )
     
     ans = rbind(
-      init_points |> filter(gid<=npts & !GEOID20 %in% remain$GEOID20) |> select(GEOID20),
+      init_points |> select(GEOID20),
       remain
     )
     
     ans = merge(ans, st_drop_geometry(pcl), by = 'GEOID20')
-    ans = ans  |> group_by(GEOID20) |> mutate(npts2 = n())
+    ans = ans |> group_by(GEOID20) |> mutate(npts2 = n())
     
     stopifnot(all(ans$npts==ans$npts2))
     stopifnot(all(pcl$GEOID20 %in% ans$GEOID20))
